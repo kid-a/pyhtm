@@ -54,12 +54,42 @@ class Region (object):
 class Column (object):
     """Model a column of cells."""
     def __init__ (self, *args, **kwargs):
-        pass
+        ## Internal data:
+        ## SP Overlap of this column with the current input
+        self._overlap = 0
+
+        ## List of columns within the current inhbition radius
+        self._neighbours = []
+
+        ## Boost factor for this column
+        ## as computed during the learning phase
+        self._boost = 0
+
+        ## List of potential synapses
+        self._potential_synapses = []
+
+        ## List of connected synapses
+        self._connected_synapses = []
+
+        ## Active Duty Cycle, i.e. a sliding average representing 
+        ## how often this column has been active after inhibition
+        ## e.g. during the last 1000 iterations
+        self._active_duty_cycle = 0
+
+        ## Overlap Duty Cycle, i.e. a sliding average representing
+        ## how oftern this column has had overlap with the input greater 
+        ## than the region's minimum overlap 
+        self._overlap_duty_cycle = 0
+
+        ## Minimum Duty Cycle, i.e. how often this column should 
+        ## be active. This value to be calculated as 1% of the maximum 
+        ## firing rate of its neighbours
+        self._MINIMUM_DUTY_CYCLE = 0 ## !FIXME read above
+
 
     ## let the '[]' operator on instances of this class
     def __getitem__(self, attr):
         return self.__dict__[attr]
-
 
 
 class Synapse (object):
