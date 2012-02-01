@@ -10,6 +10,7 @@ class Region (object):
         self._columns = []        ## columns
         self._active_columns = [] ## current active columns
         self._input_vector = []   ## input vector
+        self._synapses = {}       ## synapses map: <input-bit, list-of-synapses>
         
         ## Some params, now:
         ## Number of desired winning columns 
@@ -25,6 +26,30 @@ class Region (object):
         ## Synapse permanence increase and decrease steps
         self._PERMANENCE_INC = 0.10
         self._PERMANENCE_DEC = 0.10
+
+        ## Let's prepare the synapses map:
+        for i in range (uInputsNumber):
+            self._synapses [i] = []
+
+        ## Now, let's create the columns
+        ## they will be arranged in a m x n matrix
+        ## also, attach one synapse per input bit
+        ## to each column
+        m = uSize[0]
+        n = uSize[1]
+
+        for i in range (m):
+            self._columns.append ([])
+
+            for j in range (n):
+                c = Column ( (i, j) )
+                self._columns[i].append (c)
+                
+                for k in range (uInputsNumber):
+                    s = Synapse ()
+                    c._potential_synapses.append (s)
+                    self._synapses[k].append (s)
+
 
     ## let the '[]' operator on instances of this class
     def __getitem__(self, attr):
