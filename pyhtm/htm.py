@@ -58,16 +58,15 @@ class Region (object):
 
     def compute_neighbours (self, uColumn, uRadius = None):
         """Return the list of columns within _INHIBITION_RADIUS from uColumn """
-        if uRadius is None: uRadius = self._INHIBITION_RADIUS
-        
-        ## get the column coordinates
-        x = uColumn._coodinates[0]
-        y = uColumn._coodinates[1]
-        
+        if uRadius is None: uRadius = self._INHIBITION_RADIUS        
         neighbours = []
 
         ## stop condition:
         if uRadius == 1:
+            ## get the column coordinates
+            x = uColumn._coodinates[0]
+            y = uColumn._coodinates[1]
+
             for i in range (x - 1, x + 2):
                 for j in range (y -1, y + 2):
                     ## try to get the (i-th, j-th element
