@@ -136,11 +136,12 @@ class Region (object):
                                                 self._DESIRED_LOCAL_ACTIVITY)
 
                 if c['_overlap'] > 0 and c['_overlap'] >= min_local_activity:
-                    
                     self._active_columns.append (c)
+                    c.set_active (1)
+                
+                else: c.set_active (0)
 
 
-    
     def learn (self):
         pass
 
@@ -168,13 +169,21 @@ class Column (object):
         ## List of connected synapses
         self._connected_synapses = []
 
+        ## Active Vector, i.e. a vector representing the activity
+        ## history of the column (e.g. [0,1,0,0,1,1,0,1,... ])
+        self._active_vector = []
+
+        ## Overlap Vector, i.e. a vector representing the overlap
+        ## history of the column (e.g. [0,1,0,0,1,1,0,1,... ])
+        self._overlap_vector = []
+
         ## Active Duty Cycle, i.e. a sliding average representing 
         ## how often this column has been active after inhibition
         ## e.g. during the last 1000 iterations
         self._active_duty_cycle = 0
 
         ## Overlap Duty Cycle, i.e. a sliding average representing
-        ## how oftern this column has had overlap with the input greater 
+        ## how often this column has had overlap with the input greater 
         ## than the region's minimum overlap 
         self._overlap_duty_cycle = 0
 
@@ -194,15 +203,39 @@ class Column (object):
         for s in self._connected_synapses:
             new_overlap = new_overlap + s['_input']
             
-        if new_overlap < self._MIN_OVERLAP: new_overlap = 0
-        else: new_overlap = new_overlap * self._boost
+        if new_overlap < self._MIN_OVERLAP: 
+            new_overlap = 0
+            self._overlap_vector.append (0)
 
+        else: 
+            new_overlap = new_overlap * self._boost
+            self._overlap_vector.append (1)
+
+        ## now, set the new overlap
         self._overlap = new_overlap
+        
+        ## and recalculate the overlap_duty_cycle
+        odc = 0
+        for v in self._overlap_vector:
+            odc = odc + v
+        odc = odc / float (len (self._overlap_vector))
+        self._overlap_duty_cycle = odc
 
 
     ## let the '[]' operator on instances of this class
     def __getitem__ (self, attr):
         return self.__dict__[attr]
+
+    def set_active (self, uActiveBit):
+        self._active_vector.append (uActiveBit)
+        
+        ## recalculate Active Duty Cycle
+        adc = 0
+        for v in self._active_vector:
+            adc = adc + v
+        adc = adc / float (len (self._active_vector))
+        self._active_duty_cycle = adc
+
 
     def calculate_receptive_field_size (self):
         """Calculate the receptive field size as the average of the 
