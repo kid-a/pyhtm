@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import copy
+
 TIME = 0 # a ticking clock
 
 
@@ -59,45 +61,42 @@ class Region (object):
     def compute_neighbours (self, uColumn, uRadius = None):
         """Return the list of columns within _INHIBITION_RADIUS from uColumn """
         if uRadius is None: uRadius = self._INHIBITION_RADIUS        
-        neighbours = []
+        neighbours = set ()
 
         ## stop condition:
         if uRadius == 1:
             ## get the column coordinates
-            x = uColumn._coodinates[0]
-            y = uColumn._coodinates[1]
+            x = uColumn._coordinates[0]
+            y = uColumn._coordinates[1]
 
             for i in range (x - 1, x + 2):
                 for j in range (y -1, y + 2):
-                    ## try to get the (i-th, j-th element
+                    ## try to get the (i-th, j-th) element
                     ## if the element doesn't exist 
                     ## (i.e. we are on the edge of the matrix)
                     ## just go ahead
                     try:
                         if i == x and j == y: raise
                         if i < 0 or j < 0: raise
-                        neighbours.append (self._columns[i][j])
+                        neighbours.add (self._columns[i][j])
                     except: continue
 
-            return neighbours
+            return list (neighbours)
         
         ## recursive clause, i.e. uRadius > 1
         else:
             ## get the immediate neighbours, i.e.
             ## those such that |uColumn - neighbours| = 1
-            immediate_neighbours = self.compute_neighbours (uColumn, 1)
-            neighbours = immediate_neighbours
-
+            immediate_neighbours = set (self.compute_neighbours (uColumn, 1))
+            
             ## then, expand the selection area:
             for column in immediate_neighbours:
-                neighbours.extend (self.compute_neighbours (column, uRadius - 1))
+                for neighbour in self.compute_neighbours (column, uRadius - 1):
+                    neighbours.add (neighbour)
 
-            ## remove duplicates
-            ## also remove uColumn 
-            ## (a column is not a neighbour of itself!)
-            s = set (neighbours)
-            s.remove (uColumn)
-            return list (s)
+            ## last, add the immediate neighbours
+            neighbours = neighbours.union (immediate_neighbours)
+            return list (neighbours)
 
 
     @classmethod
@@ -161,7 +160,7 @@ class Column (object):
 
 
     ## let the '[]' operator on instances of this class
-    def __getitem__(self, attr):
+    def __getitem__ (self, attr):
         return self.__dict__[attr]
 
 
@@ -185,3 +184,10 @@ class Synapse (object):
 if __name__ == "__main__":
     print "HTM prototype starting..."
     r = Region ( (5, 5), 25 )
+    print r._columns[2][3]
+    n = r.compute_neighbours (r._columns[2][3], uRadius = 1)
+    print len (n)
+    for neighbour in n:
+        print neighbour._coordinates, neighbour
+        
+    
