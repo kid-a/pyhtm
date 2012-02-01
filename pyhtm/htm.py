@@ -99,9 +99,17 @@ class Region (object):
             return list (neighbours)
 
 
-    @classmethod
+    @staticmethod
     def kth_score (uColumns, k):
-        pass
+        """ Given a number of columns, retrieve the k-th highest overlap
+        value among them."""
+        overlap_vector = {}
+        for c in uColumns: overlap_vector [c['_coordinates']] = c['_overlap']
+        sorted_vector = sorted (overlap_vector.iteritems (),
+                                key = lambda pair : pair [1]) [::-1]
+        
+        return sorted_vector[k - 1]
+
 
     @classmethod
     def max_duty_cycle (uColumns):
@@ -189,5 +197,19 @@ if __name__ == "__main__":
     print len (n)
     for neighbour in n:
         print neighbour._coordinates, neighbour
+
+    a = r._columns[2][3]
+    b = r._columns[3][3]
+    c = r._columns[4][4]
+
+    a._overlap = 2
+    b._overlap = 3
+    c._overlap = 4
+
+    l = [a,b,c,]
+    
+    print Region.kth_score (l, 2)
+    print Region.kth_score (l, 1)
+    print Region.kth_score (l, 3)
         
     
