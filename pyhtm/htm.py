@@ -19,7 +19,7 @@ class Region (object):
         self._DESIRED_LOCAL_ACTIVITY = (10 / 100.0) * len (self._columns) 
 
         ## column inhibition radius
-        self._INHIBITION_RADIUS = 1
+        self._inhibition_radius = 1
        
         ## Synapse permanence increase and decrease steps
         self._PERMANENCE_INC = 0.10
@@ -54,8 +54,8 @@ class Region (object):
 
 
     def compute_neighbours (self, uColumn, uRadius = None):
-        """Return the list of columns within _INHIBITION_RADIUS from uColumn """
-        if uRadius is None: uRadius = self._INHIBITION_RADIUS        
+        """Return the list of columns within _inhibition_radius from uColumn """
+        if uRadius is None: uRadius = self._inhibition_radius        
         neighbours = set ()
 
         ## stop condition:
@@ -143,15 +143,37 @@ class Region (object):
 
 
     def learn (self):
+        ## update synaptic permanences for 
+        ## active columns
         for c in self._active_columns:
             c.update_synapses ()
-            
-            
 
+        ## boost mechanism for all columns
+        for row in self._columns:
+            for c in row:
+                c.boost (self.neighbours (c))
+
+
+    def spatial_pooler (self):
+        self.overlap ()
+        self.inhibite ()
+        self.learn ()
+        
+        ## update the inhibition radius
+        avg_receptive_field_size = 0
+        for row in self._columns:
+            for c in row:
+                avg_receptive_field_size = avg_receptive_field_size + \
+                    c.average_receptive_field_size ()
+                
+        avg_receptive_field_size = avg_receptive_field_size \
+            / float (len (self._columns) * len (self._columns[0])) ## suppose it's a square matrix
+        self._inhibition_radius = avg_receptive_field_size
+            
 
 
 class Column (object):
-    """Model a column of cells."""
+    """Models a column of cells."""
     def __init__ (self, uCoordinates, *args, **kwargs):
         ## Internal data:
         ## The column coordinates (x, y)
@@ -194,7 +216,7 @@ class Column (object):
         ## Minimum Duty Cycle, i.e. how often this column should 
         ## be active. This value to be calculated as 1% of the maximum 
         ## firing rate of its neighbours
-        self._MINIMUM_DUTY_CYCLE = 0 ## !FIXME read above
+        self._minimum_duty_cycle = 0 ## !FIXME read above
 
         ## Minimum number of active synapses for a column
         ## to be taken into account during inhibition
@@ -217,13 +239,6 @@ class Column (object):
 
         ## now, set the new overlap
         self._overlap = new_overlap
-        
-        ## and recalculate the overlap_duty_cycle
-        odc = 0
-        for v in self._overlap_vector:
-            odc = odc + v
-        odc = odc / float (len (self._overlap_vector))
-        self._overlap_duty_cycle = odc
 
 
     ## let the '[]' operator on instances of this class
@@ -232,13 +247,23 @@ class Column (object):
 
     def set_active (self, uActiveBit):
         self._active_vector.append (uActiveBit)
+
         
-        ## recalculate Active Duty Cycle
+    def update_active_duty_cycle (self):
         adc = 0
         for v in self._active_vector:
             adc = adc + v
         adc = adc / float (len (self._active_vector))
         self._active_duty_cycle = adc
+
+
+    def update_overlap_duty_cycle (self):
+        ## and recalculate the overlap_duty_cycle
+        odc = 0
+        for v in self._overlap_vector:
+            odc = odc + v
+        odc = odc / float (len (self._overlap_vector))
+        self._overlap_duty_cycle = odc
 
 
     def calculate_receptive_field_size (self):
@@ -250,12 +275,15 @@ class Column (object):
 
         return avg / float (len (self._connected_synapses))
 
-    def increase_permanence (self, uSynapse):
-        uSynapse['_permanence'] = uSynapse['_permanence'] + self._permanence_inc
+    def increase_permanence (self, uSynapse, uPermanenceInc = 0):
+        if uPermanenceInc == 0: uPermaneceInc = self._permanence_inc
+        
+        uSynapse['_permanence'] = uSynapse['_permanence'] + uPermaneceInc
         if uSynapse['_permanence'] > 1.0: uSynapse['_permanence'] = 1.0
         
         ## if the synapse has been activated, move to the connected synapses list
-        if uSynapse['_permanence'] > Synapse.connected_permanence:
+        if uSynapse['_permanence'] > Synapse.connected_permanence and \
+                uSynapse not in self._connected_synapses:
             self._potential_synapses.remove (uSynapse)
             self._connected_synapses.append (uSynapse)
 
@@ -265,7 +293,8 @@ class Column (object):
         if uSynapse['_permanence'] < 0.0: uSynapse['_permanence'] = 0.0
         
         ## if the synapse has been activated, move to the connected synapses list
-        if uSynapse['_permanence'] <= Synapse.connected_permanence:
+        if uSynapse['_permanence'] <= Synapse.connected_permanence and \
+                uSynapse not in self._potential_synapses:
             self._connected_synapses.remove (uSynapse)
             self._potential_synapses.append (uSynapse)
 
@@ -275,6 +304,20 @@ class Column (object):
         for s in self._potential_synapses:
             if s['_input_bit']: self.increase_permanence (s)
             else: self.decrease_permanence (s)
+            
+
+    def boost (self, uNeighbours):
+        self._minimum_duty_cycle = 0.01 * Column.max_duty_cycle (uNeighbours)
+        self.update_active_duty_cycle ()
+        self._boost = Column.boost_fuction ()
+
+        self.update_overlap_duty_cycle ()
+        if self._overlap_duty_cycle < self._minimum_duty_cycle:
+            for s in self._connected_synapses:
+                self.increase_permanence (s, 0.1 * Synapse.connected_permanence)
+            
+            for s in self._potential_synapses:
+                self.increase_permanence (s, 0.1 * Synapse.connected_permanence)
         
 
     @staticmethod
@@ -286,6 +329,14 @@ class Column (object):
 
         return int (math.sqrt (math.pow (x1 - x, 2) +
                                math.pow (y1 - y, 2)))
+
+    @staticmethod 
+    def max_duty_cycle (uColumns):
+        return max ([d._active_duty_cycle for d in uColumns])
+
+    @staticmethod
+    def boost_fuction (uActiveDutyCycle, uMinDutyCycle):
+        return None ## !FIXME to be implemented
         
 
 
