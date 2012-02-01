@@ -55,6 +55,52 @@ class Region (object):
     def __getitem__(self, attr):
         return self.__dict__[attr]
 
+
+    def compute_neighbours (self, uColumn, uRadius = None):
+        """Return the list of columns within _INHIBITION_RADIUS from uColumn """
+        if uRadius is None: uRadius = self._INHIBITION_RADIUS
+        
+        ## get the column coordinates
+        x = uColumn._coodinates[0]
+        y = uColumn._coodinates[1]
+        
+        neighbours = []
+
+        ## stop condition:
+        if uRadius == 1:
+            for i in range (x - 1, x + 2):
+                for j in range (y -1, y + 2):
+                    ## try to get the (i-th, j-th element
+                    ## if the element doesn't exist 
+                    ## (i.e. we are on the edge of the matrix)
+                    ## just go ahead
+                    try:
+                        if i == x and j == y: raise
+                        if i < 0 or j < 0: raise
+                        neighbours.append (self._columns[i][j])
+                    except: continue
+
+            return neighbours
+        
+        ## recursive clause, i.e. uRadius > 1
+        else:
+            ## get the immediate neighbours, i.e.
+            ## those such that |uColumn - neighbours| = 1
+            immediate_neighbours = self.compute_neighbours (uColumn, 1)
+            neighbours = immediate_neighbours
+
+            ## then, expand the selection area:
+            for column in immediate_neighbours:
+                neighbours.extend (self.compute_neighbours (column, uRadius - 1))
+
+            ## remove duplicates
+            ## also remove uColumn 
+            ## (a column is not a neighbour of itself!)
+            s = set (neighbours)
+            s.remove (uColumn)
+            return list (s)
+
+
     @classmethod
     def kth_score (uColumns, k):
         pass
@@ -78,8 +124,11 @@ class Region (object):
 
 class Column (object):
     """Model a column of cells."""
-    def __init__ (self, *args, **kwargs):
+    def __init__ (self, uCoordinates, *args, **kwargs):
         ## Internal data:
+        ## The column coordinates (x, y)
+        self._coordinates = uCoordinates
+
         ## SP Overlap of this column with the current input
         self._overlap = 0
 
