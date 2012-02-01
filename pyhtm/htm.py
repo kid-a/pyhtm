@@ -143,7 +143,11 @@ class Region (object):
 
 
     def learn (self):
-        pass
+        for c in self._active_columns:
+            c.update_synapses ()
+            
+            
+
 
 
 class Column (object):
@@ -246,6 +250,32 @@ class Column (object):
 
         return avg / float (len (self._connected_synapses))
 
+    def increase_permanence (self, uSynapse):
+        uSynapse['_permanence'] = uSynapse['_permanence'] + self._permanence_inc
+        if uSynapse['_permanence'] > 1.0: uSynapse['_permanence'] = 1.0
+        
+        ## if the synapse has been activated, move to the connected synapses list
+        if uSynapse['_permanence'] > Synapse.connected_permanence:
+            self._potential_synapses.remove (uSynapse)
+            self._connected_synapses.append (uSynapse)
+
+
+    def decrease_permanence (self, uSynapse):
+        uSynapse['_permanence'] = uSynapse['_permanence'] - self._permanence_dec
+        if uSynapse['_permanence'] < 0.0: uSynapse['_permanence'] = 0.0
+        
+        ## if the synapse has been activated, move to the connected synapses list
+        if uSynapse['_permanence'] <= Synapse.connected_permanence:
+            self._connected_synapses.remove (uSynapse)
+            self._potential_synapses.append (uSynapse)
+
+
+    def update_synapse (self):
+        """Update the permanence of all potential synapses."""
+        for s in self._potential_synapses:
+            if s['_input_bit']: self.increase_permanence (s)
+            else: self.decrease_permanence (s)
+        
 
     @staticmethod
     def distance (uColumn, uOther):
