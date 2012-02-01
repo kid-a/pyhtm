@@ -1,18 +1,18 @@
 #!/usr/bin/python
 
-import copy
+import math
 
 TIME = 0 # a ticking clock
 
 
 class Region (object):
     """Implements an HTM region."""
-    def __init__ (self, uSize, uInputsNumber, *args, **kwargs):
+    def __init__ (self, uSize, *args, **kwargs):
         ## Internal data:
         self._columns = []        ## columns
         self._active_columns = [] ## current active columns
         self._input_vector = []   ## input vector
-        self._synapses = {}       ## synapses map: <input-bit, list-of-synapses>
+        self._synapses = []       ## synapses
         
         ## Some params, now:
         ## Number of desired winning columns 
@@ -20,18 +20,10 @@ class Region (object):
 
         ## column inhibition radius
         self._INHIBITION_RADIUS = 1
-
-        ## Minimum number of active synapses for a column
-        ## to be taken into account during inhibition
-        self._MIN_OVERLAP = 1                  
-        
+       
         ## Synapse permanence increase and decrease steps
         self._PERMANENCE_INC = 0.10
         self._PERMANENCE_DEC = 0.10
-
-        ## Let's prepare the synapses map:
-        for i in range (uInputsNumber):
-            self._synapses [i] = []
 
         ## Now, let's create the columns
         ## they will be arranged in a m x n matrix
@@ -47,10 +39,13 @@ class Region (object):
                 c = Column ( (i, j) )
                 self._columns[i].append (c)
                 
-                for k in range (uInputsNumber):
-                    s = Synapse ()
-                    c._potential_synapses.append (s)
-                    self._synapses[k].append (s)
+                for k in range (m):
+                    self._synapses.append ([])
+
+                    for l in range (n):
+                        s = Synapse ( (k, l) ) ## syn representing input (k, l)
+                        c._potential_synapses.append (s)
+                        self._synapses[k].append (s)
 
 
     ## let the '[]' operator on instances of this class
@@ -113,16 +108,38 @@ class Region (object):
 
     @classmethod
     def max_duty_cycle (uColumns):
-        pass
+        return max ([ d['_active_duty_cycle'] for d in uColumns ])
 
     def average_receptive_field_size (self):
-        pass
+        accumulator = 0
+        for row in self._columns:
+            for c in row:
+                accumulator = accumulator + c.calculate_receptive_field_size ()
+
+        return accumulator / float (len (self._columns))
 
     def overlap (self):
-        pass
+         """Given the input vector, calculates the overlap of each column with that vector. """
+         for row in self._columns:
+             for c in row:
+                 c.update_overlap ()
+
 
     def inhibite (self):
-        pass
+        """Updates the winning columns after the inhibition step."""
+        ## Reset the active columns
+        self._active_columns = []
+
+        for row in self._columns:
+            for c in row:
+                min_local_activity = kth_score (Region.neighbours (c),
+                                                self._DESIRED_LOCAL_ACTIVITY)
+
+                if c['_overlap'] > 0 and c['_overlap'] >= min_local_activity:
+                    
+                    self._active_columns.append (c)
+
+
     
     def learn (self):
         pass
@@ -143,7 +160,7 @@ class Column (object):
 
         ## Boost factor for this column
         ## as computed during the learning phase
-        self._boost = 0
+        self._boost = 1
 
         ## List of potential synapses
         self._potential_synapses = []
@@ -166,10 +183,47 @@ class Column (object):
         ## firing rate of its neighbours
         self._MINIMUM_DUTY_CYCLE = 0 ## !FIXME read above
 
+        ## Minimum number of active synapses for a column
+        ## to be taken into account during inhibition
+        self._MIN_OVERLAP = 1                  
+
+
+    def update_overlap (self):
+        """Updates the current overlap with the inputs."""
+        new_overlap = 0
+        for s in self._connected_synapses:
+            new_overlap = new_overlap + s['_input']
+            
+        if new_overlap < self._MIN_OVERLAP: new_overlap = 0
+        else: new_overlap = new_overlap * self._boost
+
+        self._overlap = new_overlap
+
 
     ## let the '[]' operator on instances of this class
     def __getitem__ (self, attr):
         return self.__dict__[attr]
+
+    def calculate_receptive_field_size (self):
+        """Calculate the receptive field size as the average of the 
+        distances between the column and all of the connected synapses."""
+        avg = 0
+        for s in self._connected_synapses:
+            avg = avg + distance (self, s)
+
+        return avg / float (len (self._connected_synapses))
+
+
+    @staticmethod
+    def distance (uColumn, uOther):
+        x = uColumn['_coordinates'][0]
+        y = uColumn['_coordinates'][1]
+        x1 = uOther['_coordinates'][0]
+        y1 = uOther['_coordinates'][1]
+
+        return int (math.sqrt (math.pow (x1 - x, 2) +
+                               math.pow (y1 - y, 2)))
+        
 
 
 class Synapse (object):
@@ -179,10 +233,12 @@ class Synapse (object):
     ## is considered connected
     connected_permanence = 0.5 
 
-    def __init__ (self, *args, **kwargs):
-        ## Internal data:        
-        self._permanence = 0   ## bounded between 0 and 1
-        self._input_bit = None ## the input bit
+    def __init__ (self, uCoordinates, *args, **kwargs):
+        ## Internal data:
+        self._permanence = 0             ## bounded between 0 and 1
+        self._coordinates = uCoordinates ## coordinates of the associated input bit
+        self._input_bit = None           ## the input bit
+        
 
     ## let the '[]' operator on instances of this class
     def __getitem__(self, attr):
@@ -191,7 +247,7 @@ class Synapse (object):
 
 if __name__ == "__main__":
     print "HTM prototype starting..."
-    r = Region ( (5, 5), 25 )
+    r = Region ( (5, 5) )
     print r._columns[2][3]
     n = r.compute_neighbours (r._columns[2][3], uRadius = 1)
     print len (n)
