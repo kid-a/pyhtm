@@ -106,7 +106,7 @@ class Region (object):
         return sorted_vector[k - 1]
 
 
-    @classmethod
+    @staticmethod
     def max_duty_cycle (uColumns):
         return max ([ d['_active_duty_cycle'] for d in uColumns ])
 
