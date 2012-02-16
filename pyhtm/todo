@@ -1,0 +1,32 @@
+
+network.feed (input) ->
+  
+
+class Network :
+   layer = {'first': [],
+            ...}
+
+   def feed (uInput, time = time.now ()) ## by default, pass system time
+   
+ 
+class Node :
+
+   receptive field size -> range
+
+   def feed (uInput) uInput is already a vector
+
+   def add_connection 
+
+   def send_messages   
+
+how to build the network:
+
+network ['layer0'] = [node1 = Node (), node2 = Node (), node3 = Node ()...]
+network ['node1'].connect (Node2)
+
+
+
+
+prevedere un metodo clone per l'intera rete
+
+  
