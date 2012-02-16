@@ -28,5 +28,5 @@ network ['node1'].connect (Node2)
 
 
 prevedere un metodo clone per l'intera rete
-
+prevedere un metodo per fare il merge di due reti
   
