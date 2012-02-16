@@ -169,6 +169,14 @@ class Region (object):
         avg_receptive_field_size = avg_receptive_field_size \
             / float (len (self._columns) * len (self._columns[0])) ## suppose it's a square matrix
         self._inhibition_radius = avg_receptive_field_size
+
+
+    def temporal_poooler (self):
+        # self.compute_active_cells ()
+        # self.compute_predicted_state ()
+        # self.update_synapses ()
+        pass
+    
             
 
 
@@ -337,6 +345,16 @@ class Column (object):
     @staticmethod
     def boost_fuction (uActiveDutyCycle, uMinDutyCycle):
         return None ## !FIXME to be implemented
+
+
+
+class Cell (object):
+    def __init__ (self, *args, **kwargs):
+        pass
+    
+    ## let the '[]' operator on instances of this class
+    def __getitem__(self, attr):
+        return self.__dict__[attr]
         
 
 
