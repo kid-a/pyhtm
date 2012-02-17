@@ -55,6 +55,7 @@ class Node (object):
         self._lambda_minus[uFrom] = uLambda
 
     def inference (self):
+        ## compute density over coincidences
         for c in self._C:
             selected_features = []
 
@@ -63,8 +64,9 @@ class Node (object):
 
             self._y.append (reduce (mul, selected_features))
 
-        self._y = array (self._y)
-        self._lambda_plus = dot(self._y, self._PCG)
+        ## compute density over temporal groups
+        print self._y
+        self._lambda_plus = dot( array (self._y), self._PCG)
 
     def propagate (self):
         for child in self.children:
