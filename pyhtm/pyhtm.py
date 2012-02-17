@@ -28,26 +28,29 @@ def link (uChild, uParent):
 class Node (object):
     def __init__ (self, uName = None, *args, **kwargs):
         """The Node class. """
-        self._input_vector = {} ## an empty dict
-        self._y = [] ## densities over coincidences
-        self._lambda_plus = [] ## densities over temporal groups
+        ## data
+        self._lambda_minus = array ([]) ## input vector
+        self._y = array ([])            ## density over coincidences
+        self._lambda_plus = array ([])  ## output message
         
-        self._PCG = array ([[]]) ## an empty matrix
-        self._coincidences = array ([[]]) ## an empty vector of vectors
-        self._temporal_groups = set ([])
-        
-        self.receptive_field_begin = 0
-        self.receptive_field_end = 0
-        
+        ## state
+        self._C = array ([[]])          ## coincidences matrix
+        self._temporal_groups = set ([])## temporal groups
+        self._PCG = array ([[]])        ## PCG matrix
+
+        ## receptive field
+        self.rf_begin = 0
+        self.rf_end = 0
+
+        ## name and links
         self.name = uName
         self.children = []
         self.parent = None
         
 
-    def feed (self, uLambda, uTime):
-        pass
-        
-        
+    def inference (self):
+        self._y = self._lambda_minus * self._C
+        self._lambda_plus = self._y * self._PCG
 
 
 def Network (object):
