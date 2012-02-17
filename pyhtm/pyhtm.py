@@ -5,6 +5,7 @@ An implementation of Hierarchical Temporal Memory in Python.
 
 import time
 from numpy import *
+from operator import mul
 
 class Clock (object):
     """The Clock. Implements the Borg Pattern."""
@@ -29,13 +30,12 @@ class Node (object):
     def __init__ (self, uName = None, *args, **kwargs):
         """The Node class. """
         ## data
-        ## self._incoming_messages = []
-        self._lambda_minus = array ([]) ## input vector
-        self._y = array ([])            ## density over coincidences
+        self._lambda_minus = {}         ## input_vector
+        self._y = []                    ## density over coincidences
         self._lambda_plus = array ([])  ## output message
         
         ## state
-        self._C = array ([[]])          ## coincidences matrix
+        self._C = []                    ## coincidences
         self._temporal_groups = set ([])## temporal groups
         self._PCG = array ([[]])        ## PCG matrix
 
@@ -49,21 +49,27 @@ class Node (object):
         self.parent = None
 
     def clear_input (self):
-        self._lambda_minus = array ([])
+        self._lambda_minus = []
     
-    def feed (self, uLambda):
-        numpy.concatenate((self._lambda_minus, uLambda))
+    def feed (self, uLambda, uFrom):
+        self._lambda_minus[uFrom] = uLambda
 
     def inference (self):
-        self._y = self._lambda_minus * self._C
-        self._lambda_plus = self._y * self._PCG
+        for c in self._C:
+            selected_features = []
+
+            for (child,l) in self._lambda_minus.iteritems ():
+                selected_features.append (l[c[child] - 1])
+
+            self._y.append (reduce (mul, selected_features))
+
+        self._y = array (self._y)
+        self._lambda_plus = dot(self._y, self._PCG)
 
     def propagate (self):
         for child in self.children:
             child.feed (self._lambda_plus)
         self.clear_input ()
-
-
 
 
 def Network (object):
@@ -76,3 +82,9 @@ def Network (object):
         for node in self.layers[0]:
             node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
                               node.starting_point['y']:uInput.delta['y']])
+
+
+def NetworkBuilder (object):
+    """A NetworkBuilder class. Implements methods to build complex networks."""
+    def __init__ (self, *args, **kwargs):
+        pass

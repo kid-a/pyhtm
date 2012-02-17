@@ -1,4 +1,6 @@
 
+usare yaml per definire la rete
+
 network.feed (input) ->
   
 
@@ -30,3 +32,4 @@ network ['node1'].connect (Node2)
 prevedere un metodo clone per l'intera rete
 prevedere un metodo per fare il merge di due reti
   
+implementare test semaforo
