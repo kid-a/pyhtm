@@ -1,0 +1,17 @@
+## myfirstnewtork.yaml -> a simple, two hierarchy network
+
+name:    MyFirstNetwork
+layers:  
+  - 0 : [node1, node2, node3, node4] ## nodes from layer 0 take ext inputs
+  - 1 : [node5]                      ## node from upper layer gives the 
+                                     ## network output
+
+nodes:
+  - node1 : 
+      PCG: undefined
+      coincidences : undefined
+      temporal_groups : undefined
+      
+  - node5 :
+      children : [node1, node2, node3, node4]
+      

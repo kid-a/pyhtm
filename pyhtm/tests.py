@@ -64,6 +64,7 @@ class NodeTest(unittest.TestCase):
                                                    [0.30 * 0.02 * 0.9 * 0.1]])[i]) <=
                               EPSILON )
             
+        ## assert on lambda+ vector
         for i in range (len (n._lambda_plus)):
             self.assertTrue (abs (n._lambda_plus[i] - [[0.23 * 0.18 * 0.9 * 0.1],
                                                        [0.30 * 0.02 * 0.9 * 0.1]][i]))
