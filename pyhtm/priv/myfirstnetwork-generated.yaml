@@ -1,0 +1,15 @@
+layers:
+- 0: [node1, node2, node3, node4]
+- 1: [node5]
+name: MyFirstNetwork
+nodes:
+- node1:
+    children: []
+- node3:
+    children: []
+- node2:
+    children: []
+- node5:
+    children: [node1, node2, node3, node4]
+- node4:
+    children: []
