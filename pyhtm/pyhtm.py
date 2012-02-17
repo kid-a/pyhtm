@@ -29,6 +29,7 @@ class Node (object):
     def __init__ (self, uName = None, *args, **kwargs):
         """The Node class. """
         ## data
+        ## self._incoming_messages = []
         self._lambda_minus = array ([]) ## input vector
         self._y = array ([])            ## density over coincidences
         self._lambda_plus = array ([])  ## output message
@@ -39,18 +40,30 @@ class Node (object):
         self._PCG = array ([[]])        ## PCG matrix
 
         ## receptive field
-        self.rf_begin = 0
-        self.rf_end = 0
+        self.starting_point = {}
+        self.delta = {}
 
         ## name and links
         self.name = uName
         self.children = []
         self.parent = None
-        
+
+    def clear_input (self):
+        self._lambda_minus = array ([])
+    
+    def feed (self, uLambda):
+        numpy.concatenate((self._lambda_minus, uLambda))
 
     def inference (self):
         self._y = self._lambda_minus * self._C
         self._lambda_plus = self._y * self._PCG
+
+    def propagate (self):
+        for child in self.children:
+            child.feed (self._lambda_plus)
+        self.clear_input ()
+
+
 
 
 def Network (object):
@@ -60,14 +73,6 @@ def Network (object):
         self.nodes = {}
 
     def feed (self, uInput, uTime = time.time()):
-        ## transform the input into a flattened list
-        flattened_input = [item for sublist in uInput for item in sublist]
-
         for node in self.layers[0]:
-            node.feed (flattened_input [node.receptive_field_begin,
-                                        node.receptive_field_end],
-                       uTime)
-
-    # ## let the '[]' operator on instances of this class
-    # def __getitem__(self, attr):
-    #     return self.__dict__[attr]
+            node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
+                              node.starting_point['y']:uInput.delta['y']])
