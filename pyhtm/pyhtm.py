@@ -7,6 +7,7 @@ import time
 from numpy import *
 from operator import mul
 
+
 class Clock (object):
     """The Clock. Implements the Borg Pattern."""
     __shared_state = {}
@@ -19,11 +20,6 @@ class Clock (object):
     def step (self): self.__time = self.__time + 1
     def now (self): return self.__time
     def reset (self): self.__time = 0
-
-
-def link (uChild, uParent):
-    uChild.parent = uParent
-    uParent.children.append (uChild)
 
 
 class Node (object):
@@ -72,7 +68,7 @@ class Node (object):
         parent.feed (self._lambda_plus, self.name)
 
 
-def Network (object):
+class Network (object):
     """The Network class. Contains nodes arranged in a hierarchy."""
     def __init__ (self, *args, **kwargs):
         self.layers = {}
@@ -81,10 +77,15 @@ def Network (object):
     def feed (self, uInput, uTime = time.time()):
         for node in self.layers[0]:
             node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
-                              node.starting_point['y']:uInput.delta['y']])
-
-
-def NetworkBuilder (object):
+                              node.starting_point['y']:uInput.delta['y']],
+                       'input')
+            
+            
+def link (uChild, uParent):
+    uChild.parent = uParent
+    uParent.children.append (uChild)
+                
+class NetworkBuilder (object):
     """A NetworkBuilder class. Implements methods to build complex networks."""
     def __init__ (self, *args, **kwargs):
         pass
