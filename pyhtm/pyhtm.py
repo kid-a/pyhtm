@@ -69,9 +69,7 @@ class Node (object):
         self._lambda_plus = dot( array (self._y), self._PCG)
 
     def propagate (self):
-        for child in self.children:
-            child.feed (self._lambda_plus)
-        self.clear_input ()
+        parent.feed (self._lambda_plus, self.name)
 
 
 def Network (object):
