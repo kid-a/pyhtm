@@ -72,9 +72,9 @@ class Node (object):
         
     def inference (self):
         """Inference is a template method."""
-        compute_density_over_coinc ()
-        compute_density_over_groups ()
-        compute_class_posterior_probabilities ()
+        self.compute_density_over_coinc ()
+        self.compute_density_over_groups ()
+        self.compute_class_posterior_probabilities ()
 
 
     def propagate (self):
