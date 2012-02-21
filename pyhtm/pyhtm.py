@@ -62,6 +62,9 @@ class Node (object):
 
     def compute_density_over_groups (self):
         self._lambda_plus = dot( array (self._y), self._PCG)        
+
+    def compute_class_posterior_probabilities (self):
+        pass
     
     def feed (self, uLambda, uFrom):
         self._lambda_minus[uFrom] = uLambda
@@ -71,6 +74,7 @@ class Node (object):
         """Inference is a template method."""
         compute_density_over_coinc ()
         compute_density_over_groups ()
+        compute_class_posterior_probabilities ()
 
 
     def propagate (self):
@@ -91,7 +95,7 @@ class EntryNode (Node):
         """For entry level nodes, the input is a plain numpy array."""
         self._lambda_minus = uInput
 
-    def inference (self):
+    def compute_density_over_coinc (self):
         """For entry level nodes, the y vector is obtained comparing 
         the coincidence with the input message, by means of the euclidean
         norm."""
@@ -100,6 +104,35 @@ class EntryNode (Node):
             norm = linalg.norm (c - self._lambda_minus)
             distance = math.exp ( - math.pow (norm / float (self._sigma), 2))
             self._y.append (distance)
+
+
+class OutputNode (Node):
+    """The OutputNode class. Implements the peculiar inference mechanism of 
+    the outer level nodes."""
+    def __init__ (self, *args, **kwargs):
+        super(Node, self).__init__(*args, **kwargs)
+        
+        ## state
+        ## !FIXME what about cleaning up??
+        self._prior_class_prob = array ([]) ## prior class probabilities
+        self._PCW = array ([[]])            ## PCW matrix
+        self._densities_over_classes = array ([]) 
+        self._class_posterior_prob = array ([])
+        
+    def compute_density_over_groups (self):
+        self._densities_over_classes = dot( array (self._y), self._PCW)
+
+    def compute_class_posterior_probabilities (self):
+        total_probability = 0
+        for k in range (len (self._densities_over_classes)):
+            total_probability = total_probability + \
+                ( self._densities_over_classes [k] * self._prior_class_prob [k] )
+
+        for j in range (len (self._densities_over_classes)):
+            self._class_posterior_prob [j] = self._densities_over_classes * \
+                self._prior_class_prob / float (total_probability)
+
+        self._lambda_plus = self._class_posterior_prob
             
 
 class Network (object):
@@ -120,6 +153,7 @@ def link (uChild, uParent):
     uChild.parent = uParent
     uParent.children.append (uChild)
                 
+
 class NetworkBuilder (object):
     """A NetworkBuilder class. Implements methods to build complex networks."""
     def load (self, uFile):
