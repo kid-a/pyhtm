@@ -86,7 +86,7 @@ class EntryNode (Node):
     and inference mechanism of a node beloning to the entry level of 
     a network.""" 
     def __init__ (self, uSigma = 1, *args, **kwargs):
-        super(Node, self).__init__(*args, **kwargs)
+        Node.__init__(self, *args, **kwargs)
 
         self._lambda_minus = array ([[]]) ## small input patch
         self._sigma = uSigma
@@ -110,7 +110,7 @@ class OutputNode (Node):
     """The OutputNode class. Implements the peculiar inference mechanism of 
     the outer level nodes."""
     def __init__ (self, *args, **kwargs):
-        super(Node, self).__init__(*args, **kwargs)
+        Node.__init__(self, *args, **kwargs)
         
         ## state
         ## !FIXME what about cleaning up??
@@ -170,7 +170,15 @@ class NetworkBuilder (object):
 
             list_of_nodes = []
             for node_name in nodes:
-                n = Node(uName = node_name)
+                ## create entry level nodes for level zero:
+                if int(layer_name) == 0:
+                    n = EntryNode (uName = node_name)
+                ## create output nodes for the output level:
+                elif (int(layer_name) + 1) == len (net_descr['layers']):
+                    n = OutputNode (uName = node_name)
+                ## else, create an intermediate node:
+                else:
+                    n = Node(uName = node_name)
                 list_of_nodes.append (n)
                 network.nodes[node_name] = n
             
