@@ -82,7 +82,7 @@ class NodeTest(unittest.TestCase):
                        [0.3, 0.9]]),
                 
                 ## sLambdaPlus = 
-                array([0.00277, 0.0008586])
+                array([0.046528,  0.065974])
                 )
             }
     
@@ -110,7 +110,7 @@ class NodeTest(unittest.TestCase):
             
         n.inference ()
         
-        ## assert on y vector
+        ## assert on Y vector
         for i in range (len (n._y)):            
             self.assertTrue ( abs (n._y[i] - sY[i]) <= EPSILON )
             
@@ -128,7 +128,7 @@ class NodeTest(unittest.TestCase):
 
     def test_inference_entry (self):
         ## load sample data
-        (sLambdaMinus, sC, sY, sPCG, sLambdaPLus) = self.sample_data ()['e']
+        (sLambdaMinus, sC, sY, sPCG, sLambdaPlus) = self.sample_data ()['e']
         n = EntryNode ()
         n._C = sC
         n._PCG = sPCG
@@ -136,8 +136,13 @@ class NodeTest(unittest.TestCase):
         n.feed (sLambdaMinus)
         n.inference ()
 
+        ## assert on Y vector
         for i in range (len (n._y)):
             self.assertTrue ( abs(n._y[i] - sY[i]) <= EPSILON )
+
+        ## assert on lambda+ vector
+        for i in range (len (sLambdaPlus)):
+            self.assertTrue ( abs(n._lambda_plus[i] - sLambdaPlus[i]) <= EPSILON )
 ##
 ##------------------------------------------------------------------------------
 ##  Main
