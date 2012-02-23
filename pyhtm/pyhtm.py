@@ -69,7 +69,7 @@ class EntryNodeBehaviour (object):
         self._temporal_groups = set ([]) 
         self._PCG = array ([[]])
         
-    def feed (self, uInput):
+    def feed (self, uInput, _uFrom):
         self._lambda_minus = uInput
 
     def inference (self):

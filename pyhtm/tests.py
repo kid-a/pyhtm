@@ -109,21 +109,21 @@ class NodeTest(unittest.TestCase):
 
     def test_feed_intermediate (self):
         (sLambdaMinus, sC, sY, sPCG, sLambdaPlus) = self.sample_data ()['i']
-        n = Node ()
+        n = make_node ('i', 'test')
         
         for l in sLambdaMinus.iteritems ():
             n.feed (l[1], l[0])
             
         ## assert on _lambda_minus vector
         for l in sLambdaMinus.iteritems ():
-            self.assertEqual (n._lambda_minus[l[0]].all (), l[1].all ())
+            self.assertEqual (n._behaviour._lambda_minus[l[0]].all (), l[1].all ())
         
 
     def test_inference_intermediate (self):
         (sLambdaMinus, sC, sY, sPCG, sLambdaPlus) = self.sample_data ()['i']
-        n = Node ()
-        n._C = sC
-        n._PCG = sPCG
+        n = make_node ('i', 'test')
+        n._behaviour._C = sC
+        n._behaviour._PCG = sPCG
         
         for l in sLambdaMinus.iteritems ():
             n.feed (l[1], l[0])
@@ -131,38 +131,38 @@ class NodeTest(unittest.TestCase):
         n.inference ()
         
         ## assert on Y vector
-        for i in range (len (n._y)):            
-            self.assertTrue ( abs (n._y[i] - sY[i]) <= EPSILON )
+        for i in range (len (n._behaviour._y)):            
+            self.assertTrue ( abs (n._behaviour._y[i] - sY[i]) <= EPSILON )
             
         ## assert on lambda+ vector
         for i in range (len (sLambdaPlus)):
-            self.assertTrue ( abs(n._lambda_plus[i] - sLambdaPlus[i]) <= EPSILON )
+            self.assertTrue ( abs(n._behaviour._lambda_plus[i] - sLambdaPlus[i]) <= EPSILON )
 
 
     def test_feed_entry (self):
         (sLambdaMinus, sC, sY, sPCG, sLambdaPLus) = self.sample_data ()['e']
-        n = EntryNode ()
+        n = make_node ('e', 'test')
         
-        n.feed (sLambdaMinus)
-        self.assertEqual (n._lambda_minus.all (), sLambdaMinus.all ())
+        n.feed (sLambdaMinus, 'input')
+        self.assertEqual (n._behaviour._lambda_minus.all (), sLambdaMinus.all ())
 
     def test_inference_entry (self):
         ## load sample data
         (sLambdaMinus, sC, sY, sPCG, sLambdaPlus) = self.sample_data ()['e']
-        n = EntryNode ()
-        n._C = sC
-        n._PCG = sPCG
+        n = make_node ('e', 'test')
+        n._behaviour._C = sC
+        n._behaviour._PCG = sPCG
         
-        n.feed (sLambdaMinus)
+        n.feed (sLambdaMinus, 'input')
         n.inference ()
 
         ## assert on Y vector
-        for i in range (len (n._y)):
-            self.assertTrue ( abs(n._y[i] - sY[i]) <= EPSILON )
+        for i in range (len (n._behaviour._y)):
+            self.assertTrue ( abs(n._behaviour._y[i] - sY[i]) <= EPSILON )
 
         ## assert on lambda+ vector
         for i in range (len (sLambdaPlus)):
-            self.assertTrue ( abs(n._lambda_plus[i] - sLambdaPlus[i]) <= EPSILON )
+            self.assertTrue ( abs(n._behaviour._lambda_plus[i] - sLambdaPlus[i]) <= EPSILON )
 ##
 ##------------------------------------------------------------------------------
 ##  Main
