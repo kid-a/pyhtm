@@ -52,8 +52,7 @@ class Node (object):
         self._behaviour.inference ()
 
     def propagate (self):
-        self._behaviour.propagate (self.name, self.children)
-        # parent.feed (self._lambda_plus, self.name)
+        self._behaviour.propagate (self.name, self.parent)
 
 
 class EntryNodeBehaviour (object):
@@ -89,6 +88,9 @@ class EntryNodeBehaviour (object):
     def compute_density_over_groups (self):
         self._lambda_plus = dot( array (self._y), self._PCG)
 
+    def propagate (self, uMyName, uParent):
+        uParent.feed (self._lambda_plus, uMyName)        
+
     
 class IntermediateNodeBehaviour (object):
     def __init__ (self, *args, **kwargs):
@@ -119,7 +121,10 @@ class IntermediateNodeBehaviour (object):
             self._y.append (reduce (mul, selected_features))
             
     def compute_density_over_groups (self):
-        self._lambda_plus = dot( array (self._y), self._PCG)        
+        self._lambda_plus = dot( array (self._y), self._PCG)
+
+    def propagate (self, uMyName, uParent):
+        uParent.feed (self._lambda_plus, uMyName)
 
 
 class OutputNodeBehaviour (object):
@@ -167,6 +172,9 @@ class OutputNodeBehaviour (object):
                 self._prior_class_prob / float (total_probability)
 
         self._lambda_plus = self._class_posterior_prob
+
+    def propagate (self, uMyName, uParent):
+        pass
             
 
 class Network (object):
@@ -176,11 +184,14 @@ class Network (object):
         self.layers = {}
         self.nodes = {}
 
-    def feed (self, uInput, uTime = time.time()):
-        for node in self.layers[0]:
-            node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
-                              node.starting_point['y']:uInput.delta['y']],
-                       'input')
+    # def feed (self, uInput, uTime = time.time()):
+    #     for node in self.layers[0]:
+    #         node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
+    #                           node.starting_point['y']:uInput.delta['y']],
+    #                    'input')
+
+    # def inference_step (self):
+    #     for layer in layers
             
             
 def link (uChild, uParent):
@@ -240,7 +251,7 @@ class NetworkBuilder (object):
                     
                     ## set the 'parent' attribute in children
                     for child in network.nodes[node_name].children:
-                        network.nodes[child].parent = node_name
+                        network.nodes[child].parent = network.nodes[node_name]
 
         return network
 
