@@ -12,6 +12,11 @@ from pyhtm import *
 EPSILON = 0.000001
 
 
+# class NetworkTest(unittest.TestCase):
+#     def test_get_layer (self):
+#         n = Network ()
+
+
 class NodeTest(unittest.TestCase):
     def sample_data (self):
         ## sample data have the form (lambda-, C, Y, PCG, lamba+)

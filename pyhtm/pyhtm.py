@@ -45,6 +45,9 @@ class Node (object):
         self.starting_point = {}        ## the starting point of the RF
         self.delta = {}                 ## extension of the RF in xy coordinates
 
+    def clone_state (self): return self._behaviour.clone_state ()
+    def set_state (self, uState): self._behaviour.set_state (uState)
+
     def feed (self, uInput, uFrom): 
         self._behaviour.feed (uInput, uFrom)
                 
@@ -53,6 +56,7 @@ class Node (object):
 
     def propagate (self):
         self._behaviour.propagate (self.name, self.parent)
+
 
 
 class EntryNodeBehaviour (object):
@@ -67,6 +71,22 @@ class EntryNodeBehaviour (object):
         self._C = []
         self._temporal_groups = set ([]) 
         self._PCG = array ([[]])
+
+    ##
+    ## clone_state () -> { ('C' | 'PCG' | 'temporal_groups') : value }
+    ##
+    def clone_state (self):
+        return { 'C'               : self._C,
+                 'PCG'             : self._PGC,
+                 'temporal_groups' : self._temporal_groups }
+
+    ##
+    ## set_state ( uState :: { ('C' | 'PCG' | 'temporal_groups') : value } )
+    ##
+    def set_state (self, uState):
+        self._C = uState['C']
+        self._PCG = uState['PCG']
+        self._temporal_groups = uState ['temporal_groups']
         
     def feed (self, uInput, _uFrom):
         self._lambda_minus = uInput
@@ -103,6 +123,22 @@ class IntermediateNodeBehaviour (object):
         self._C = []
         self._temporal_groups = set ([]) 
         self._PCG = array ([[]])
+
+    ##
+    ## clone_state () -> { ('C' | 'PCG' | 'temporal_groups') : value }
+    ##
+    def clone_state (self):
+        return { 'C'               : self._C,
+                 'PCG'             : self._PGC,
+                 'temporal_groups' : self._temporal_groups }
+
+    ##
+    ## set_state ( uState :: { ('C' | 'PCG' | 'temporal_groups') : value } )
+    ##
+    def set_state (self, uState):
+        self._C = uState['C']
+        self._PCG = uState['PCG']
+        self._temporal_groups = uState ['temporal_groups']
 
     def feed (self, uLambda, uFrom):
         self._lambda_minus[uFrom] = uLambda
@@ -179,19 +215,60 @@ class OutputNodeBehaviour (object):
 
 class Network (object):
     """The Network class. Contains nodes arranged in a hierarchy."""
+
+    ##
+    ##__init__ ( uName :: str )
+    ##
     def __init__ (self, uName = None, *args, **kwargs):
-        self.name = uName
-        self.layers = {}
-        self.nodes = {}
+        self.name = uName               ## :: str
+        self.layers = {}                ## :: {int : [n :: Node,],}
+        self.nodes = {}                 ## :: {str : [n :: Node,],}
+        self.shared_mode_levels = set() ## :: set ( int )
 
-    # def feed (self, uInput, uTime = time.time()):
-    #     for node in self.layers[0]:
-    #         node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
-    #                           node.starting_point['y']:uInput.delta['y']],
-    #                    'input')
+    ##
+    ## list_layers () -> [l :: int]
+    ##
+    def list_layers (self):
+        return [l for l in self.layers.iterkeys ()]
 
-    # def inference_step (self):
-    #     for layer in layers
+    ##
+    ## get_layer ( uLayerName :: int ) -> [n :: Node]
+    ##
+    def get_layer (self, uLayerName):
+        """ Returns a list containing a reference to all nodes in the 
+        layer identified  by uLayerName """
+        return self.layers[uLayerName]
+
+    ##
+    ## enable_shared_mode ( uLayerName :: int )
+    ##
+    def enable_shared_mode (self, uLayerName):
+        self.shared_mode_levels.add (uLayerName)
+        
+    ##
+    ## disable_shared_mode ( uLayerName :: int )
+    ##
+    def disable_shared_mode (self, uLayerName):
+        try: self.shared_mode_levels.remove (uLayerName)
+        except: raise Exception ("Shared mode was not enabled for layer " + 
+                                 str(uLayerName))
+
+    ##
+    ## shared_mode_enabled_in ( uLayerName :: int )
+    ##
+    def shared_mode_enabled_in (self, uLayerName):
+        if uLayerName in self.shared_mode_levels: return True
+        else: return False
+
+    ##
+    ## feed ( uInput :: numpy.array,
+    ##        uTime  :: time.time )       
+    ## !FIXME node feed is not working yet
+    def feed (self, uInput, uTime = time.time()):
+        for node in self.layers[0]:
+            node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
+                              node.starting_point['y']:uInput.delta['y']],
+                       'input')
             
             
 def link (uChild, uParent):
