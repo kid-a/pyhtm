@@ -83,6 +83,26 @@ class NodeTest(unittest.TestCase):
                 
                 ## sLambdaPlus = 
                 array([0.046528,  0.065974])
+                ),
+            
+            ##------------------------------------------------------------------
+            ## OUTPUT NODE TEST DATA
+            ## -----------------------------------------------------------------
+            'o': (
+                ## sLambdaMinus =
+                array ([]),
+                
+                ## sC =
+                array ([[]]),
+
+                ## sY = 
+                array ([]),
+                
+                ## sPCG = 
+                array ([[]]),
+
+                ## sLambdaPlus = 
+                array ([])
                 )
             }
     

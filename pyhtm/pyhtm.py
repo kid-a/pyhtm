@@ -24,76 +24,57 @@ class Clock (object):
     def reset (self): self.__time = 0
 
 
+def make_node (uType, uName, uSigma = 1):
+    if   uType == 'e': return Node (uName, EntryNodeBehaviour (uSigma))
+    elif uType == 'i': return Node (uName, IntermediateNodeBehaviour ())
+    elif uType == 'o': return Node (uName, OutputNodeBehaviour ())
+
+
 class Node (object):
-    def __init__ (self, uName = None, *args, **kwargs):
+    def __init__ (self, uName, uBehaviour, *args, **kwargs):
         """The Node class. """
-        ## data
-        self._lambda_minus = {}         ## input_vector
-        self._y = []                    ## density over coincidences
-        self._lambda_plus = array ([])  ## output message
-        
-        ## state
-        self._C = []                    ## coincidences
-        self._temporal_groups = set ([])## temporal groups
-        self._PCG = array ([[]])        ## PCG matrix
+        ## name and links
+        self.name = uName               ## the node's name
+        self.children = []              ## the node's children
+        self.parent = None              ## the node's parent
+
+        ## behaviour
+        self._behaviour = uBehaviour    ## Entry, Intermediate or Output node
 
         ## receptive field
-        self.starting_point = {}
-        self.delta = {}
+        self.starting_point = {}        ## the starting point of the RF
+        self.delta = {}                 ## extension of the RF in xy coordinates
 
-        ## name and links
-        self.name = uName
-        self.children = []
-        self.parent = None
-
-    def clear_input (self):
-        self._lambda_minus = []
-
-    def compute_density_over_coinc (self):
-        for c in self._C:
-            selected_features = []
-
-            for (child,l) in self._lambda_minus.iteritems ():
-                selected_features.append (l[c[child] - 1])
-
-            ## compute each element of y as the multiplication
-            ## of the selected features
-            self._y.append (reduce (mul, selected_features))
-
-    def compute_density_over_groups (self):
-        self._lambda_plus = dot( array (self._y), self._PCG)        
-
-    def compute_class_posterior_probabilities (self):
-        pass
-    
-    def feed (self, uLambda, uFrom):
-        self._lambda_minus[uFrom] = uLambda
-
-        
+    def feed (self, uInput, uFrom): 
+        self._behaviour.feed (uInput, uFrom)
+                
     def inference (self):
-        """Inference is a template method."""
-        self.compute_density_over_coinc ()
-        self.compute_density_over_groups ()
-        self.compute_class_posterior_probabilities ()
-
+        self._behaviour.inference ()
 
     def propagate (self):
-        parent.feed (self._lambda_plus, self.name)
+        self._behaviour.propagate (self.name, self.children)
+        # parent.feed (self._lambda_plus, self.name)
 
 
-class EntryNode (Node):
-    """The EntryNode class. Implements the peculiar input manipulation
-    and inference mechanism of a node beloning to the entry level of 
-    a network.""" 
+class EntryNodeBehaviour (object):
     def __init__ (self, uSigma = 1, *args, **kwargs):
-        Node.__init__(self, *args, **kwargs)
+        ## data
+        self._lambda_minus = array([]) ## input vector
+        self._sigma = uSigma           ## speed of deviation of each y[i]
+        self._y = []                   ## density over coincidences
+        self._lambda_plus = array ([]) ## output message
 
-        self._lambda_minus = array ([[]]) ## small input patch
-        self._sigma = uSigma
+        ## state
+        self._C = []
+        self._temporal_groups = set ([]) 
+        self._PCG = array ([[]])
         
     def feed (self, uInput):
-        """For entry level nodes, the input is a plain numpy array."""
         self._lambda_minus = uInput
+
+    def inference (self):
+        self.compute_density_over_coinc ()
+        self.compute_density_over_groups ()
 
     def compute_density_over_coinc (self):
         """For entry level nodes, the y vector is obtained comparing 
@@ -101,27 +82,80 @@ class EntryNode (Node):
         norm."""
         for c in self._C:
             ## compute the euclidean norm with Frobenius formula
-            norm = linalg.norm (c - self._lambda_minus)
+            norm = linalg.norm (c - self._lambda_minus.flatten ())
             distance = math.exp ( - math.pow (norm / float (self._sigma), 2))
             self._y.append (distance)
 
+    def compute_density_over_groups (self):
+        self._lambda_plus = dot( array (self._y), self._PCG)
 
-class OutputNode (Node):
-    """The OutputNode class. Implements the peculiar inference mechanism of 
-    the outer level nodes."""
+    
+class IntermediateNodeBehaviour (object):
     def __init__ (self, *args, **kwargs):
-        Node.__init__(self, *args, **kwargs)
+        ## data
+        self._lambda_minus = {}        ## input dict
+        self._y = []                   ## density over coincidences
+        self._lambda_plus = array ([]) ## output message
         
         ## state
-        ## !FIXME what about cleaning up??
-        self._prior_class_prob = array ([]) ## prior class probabilities
-        self._PCW = array ([[]])            ## PCW matrix
-        self._densities_over_classes = array ([]) 
-        self._class_posterior_prob = array ([])
-        
-    def compute_density_over_groups (self):
-        self._densities_over_classes = dot( array (self._y), self._PCW)
+        self._C = []
+        self._temporal_groups = set ([]) 
+        self._PCG = array ([[]])
 
+    def feed (self, uLambda, uFrom):
+        self._lambda_minus[uFrom] = uLambda
+
+    def inference (self):
+        self.compute_density_over_coinc ()
+        self.compute_density_over_groups ()
+
+    def compute_density_over_coinc (self):
+        for c in self._C:
+            selected_features = []
+
+            for (child,l) in self._lambda_minus.iteritems ():
+                selected_features.append (l[c[child] - 1])
+            
+            self._y.append (reduce (mul, selected_features))
+            
+    def compute_density_over_groups (self):
+        self._lambda_plus = dot( array (self._y), self._PCG)        
+
+
+class OutputNodeBehaviour (object):
+    def __init__ (self, *args, **kwargs):
+        ## data
+        self._lambda_minus = {}        ## input dict
+        self._y = []                   ## density over coincidences
+        self._lambda_plus = array ([]) ## output message
+        
+        ## state
+        self._C = []
+        self._prior_class_prov = array ([])       ## prior class probabilities
+        self._PCW = array ([])                    ## PCW matrix
+        self._densities_over_classes = array ([]) ## densities over classes
+        self._class_posterior_prob = array ([])   ## class posterior probabilities
+
+    def feed (self, uLambda, uFrom):
+        self._lambda_minus[uFrom] = uLambda
+
+    def inference (self):
+        self.compute_density_over_coinc ()
+        self.compute_density_over_classes ()
+        self.compute_class_posterior_probabilities ()
+
+    def compute_density_over_coinc (self):
+        for c in self._C:
+            selected_features = []
+
+            for (child,l) in self._lambda_minus.iteritems ():
+                selected_features.append (l[c[child] - 1])
+            
+            self._y.append (reduce (mul, selected_features))
+
+    def compute_density_over_classes (self):
+        self._densities_over_classes = dot( array (self._y), self._PCW)
+        
     def compute_class_posterior_probabilities (self):
         total_probability = 0
         for k in range (len (self._densities_over_classes)):
@@ -172,13 +206,13 @@ class NetworkBuilder (object):
             for node_name in nodes:
                 ## create entry level nodes for level zero:
                 if int(layer_name) == 0:
-                    n = EntryNode (uName = node_name)
+                    n = make_node ('e', node_name)
                 ## create output nodes for the output level:
                 elif (int(layer_name) + 1) == len (net_descr['layers']):
-                    n = OutputNode (uName = node_name)
+                    n = make_node ('o', node_name)
                 ## else, create an intermediate node:
                 else:
-                    n = Node(uName = node_name)
+                    n = make_node ('i', node_name)
                 list_of_nodes.append (n)
                 network.nodes[node_name] = n
             
@@ -189,19 +223,24 @@ class NetworkBuilder (object):
             for (attribute_name, attribute_value) in node[node_name].iteritems():
                 if attribute_name == 'coincidences' and \
                         attribute_value != 'undefined':
-                    network.nodes[node_name]._C = attribute_value
+                    network.nodes[node_name].behaviour._C = attribute_value
 
                 if attribute_name == 'PCG' and \
                         attribute_value != 'undefined':
-                    network.nodes[node_name]._PCG = attribute_value
+                    network.nodes[node_name].behaviour._PCG = attribute_value
 
                 if attribute_name == 'temporal_groups' and \
                         attribute_value != 'undefined':
-                    network.nodes[node_name]._temporal_groups = attribute_value
+                    network.nodes[node_name].behaviour._temporal_groups = attribute_value
 
                 if attribute_name == 'children' and \
                         attribute_value != 'undefined':
+                    ## set children
                     network.nodes[node_name].children = attribute_value
+                    
+                    ## set the 'parent' attribute in children
+                    for child in network.nodes[node_name].children:
+                        network.nodes[child].parent = node_name
 
         return network
 
@@ -220,16 +259,16 @@ class NetworkBuilder (object):
         for (node_name, node_instance) in n.nodes.iteritems ():
             node = {node_name : dict ()}
 
-            if node_instance._C != []: 
+            if node_instance._behaviour._C != []: 
                 node[node_name]['coincidences'] = node_instance._C
 
-            if node_instance._PCG != array ([]): 
-                node[node_name]['PCG'] = node_instance._PCG.tolist ()
+            # if node_instance._behaviour._PCG != array ([]): 
+            #     node[node_name]['PCG'] = node_instance._PCG.tolist ()
 
-            if node_instance._temporal_groups != set ([]): 
-                node[node_name]['temporal_groups'] = \
-                    node_instance._temporal_groups.tolist ()
-
+            # if node_instance._behaviour._temporal_groups != set ([]): 
+            #     node[node_name]['temporal_groups'] = \
+            #         node_instance._temporal_groups.tolist ()
+                
             node[node_name]['children'] = \
                 [child for child in node_instance.children]
 

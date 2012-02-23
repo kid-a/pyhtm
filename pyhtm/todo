@@ -1,5 +1,15 @@
 
-usare yaml per definire la rete
+scrivere test data
+e unit test per output node
+
+adattare algoritmi per salvare rete in yaml all'output node
+probabilmente serve qualcosa del tipo
+
+make_yaml (node) -> if, elif, elif
+
+don't like having a node's state split across several classes
+
+usare yaml per definire la rete // done
 
 network.feed (input) ->
   
@@ -33,3 +43,4 @@ prevedere un metodo clone per l'intera rete
 prevedere un metodo per fare il merge di due reti
   
 implementare test semaforo
+scrivere della documentazione come si deve
