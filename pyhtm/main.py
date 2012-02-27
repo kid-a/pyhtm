@@ -9,6 +9,9 @@ if __name__ == "__main__":
 
     builder = NetworkBuilder ()
     network = builder.load ('priv/myfirstnetwork.yaml')
+    # for n in network.nodes.itervalues ():
+    #     print n.children 
+    #     print n.parent
     ##builder.save ('priv/myfirstnetwork-generated.yaml', network)
     
     # for n in network.nodes.iteritems():

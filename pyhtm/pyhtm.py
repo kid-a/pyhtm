@@ -23,6 +23,21 @@ class Clock (object):
     def now (self): return self.__time
     def reset (self): self.__time = 0
 
+class Input (object):
+    """The Input class. Represents the Newtork input."""
+    __shared_state = {}
+    
+    def __init__ (self, *args, **kwargs):
+        self.__dict__ = self.__shared_state
+        self.__actual_input = None   ## :: numpy.array
+        self.__temporal_gap = False  ## :: Bool
+
+    ## !FIXME use properties here?
+    def set_value (self, uValue): self.__actual_input = uValue
+    def set_temporal_gap (self, uValue): self.__temporal_gap = uValue
+    def get_value (self): return self.__actual_input
+    def temporal_gap_active (self): return self.__temporal_gap
+
 
 def make_node (uType, uName, uSigma = 1):
     if   uType == 'e': return Node (uName, EntryNodeBehaviour (uSigma))
@@ -34,12 +49,14 @@ class Node (object):
     def __init__ (self, uName, uBehaviour, *args, **kwargs):
         """The Node class. """
         ## name and links
-        self.name = uName               ## the node's name
-        self.children = []              ## the node's children
-        self.parent = None              ## the node's parent
+        self.name = uName               ## :: str
+        self.children = []              ## :: [n :: Node]
+        self.parent = None              ## :: Node
 
         ## behaviour
-        self._behaviour = uBehaviour    ## Entry, Intermediate or Output node
+        self._behaviour = uBehaviour    ## :: EntryNodeBehaviour |
+                                        ##  | IntermediateNodeBehaviour
+                                        ##  | OutputNodeBehaviour
 
         ## receptive field
         self.starting_point = {}        ## the starting point of the RF
@@ -58,7 +75,6 @@ class Node (object):
         self._behaviour.propagate (self.name, self.parent)
 
 
-
 class EntryNodeBehaviour (object):
     def __init__ (self, uSigma = 1, *args, **kwargs):
         ## data
@@ -68,23 +84,43 @@ class EntryNodeBehaviour (object):
         self._lambda_plus = array ([]) ## output message
 
         ## state
+        self._seen_k_star = {}
+        self._latest_active_coinc = None
         self._C = []
+        self._T = array ([[]])
         self._temporal_groups = set ([]) 
         self._PCG = array ([[]])
 
     ##
-    ## clone_state () -> { ('C' | 'PCG' | 'temporal_groups') : value }
+    ## clone_state () -> { ( 'seen_k_star'
+    ##                       | 'latest_active_coinc'
+    ##                       | 'C'
+    ##                       | 'T'
+    ##                       |'PCG'
+    ##                       |'temporal_groups' 
+    ##                       |'lambda_minus'   ) : value }
     ##
     def clone_state (self):
-        return { 'C'               : self._C,
-                 'PCG'             : self._PGC,
-                 'temporal_groups' : self._temporal_groups }
+        return { 'lambda_minus'       : self._lambda_minus,
+                 'seen_k_star'        : self._seen_k_star,
+                 'latest_active_coinc': self._latest_active_coinc,
+                 'C'                  : self._C,
+                 'PCG'                : self._PGC,
+                 'temporal_groups'    : self._temporal_groups }
 
     ##
-    ## set_state ( uState :: { ('C' | 'PCG' | 'temporal_groups') : value } )
+    ## set_state ( uState :: { ( 'seen_k_star'
+    ##                           | 'latest_active_coinc'
+    ##                           | 'C'
+    ##                           | 'T'
+    ##                           |'PCG'
+    ##                           |'temporal_groups' : value } )
     ##
     def set_state (self, uState):
+        self._seen_k_star = uState['seen_k_star']
+        self._latest_active_coinc = uState['latest_active_coin']
         self._C = uState['C']
+        self._T = uState['T']
         self._PCG = uState['PCG']
         self._temporal_groups = uState ['temporal_groups']
         
@@ -263,7 +299,7 @@ class Network (object):
     ##
     ## feed ( uInput :: numpy.array,
     ##        uTime  :: time.time )       
-    ## !FIXME node feed is not working yet
+    ##
     def feed (self, uInput, uTime = time.time()):
         for node in self.layers[0]:
             node.feed (uInput[node.starting_point['x']:uInput.delta['x'],
@@ -324,11 +360,12 @@ class NetworkBuilder (object):
                 if attribute_name == 'children' and \
                         attribute_value != 'undefined':
                     ## set children
-                    network.nodes[node_name].children = attribute_value
-                    
+                    for child_name in attribute_value:
+                        network.nodes[node_name].children.append (network.nodes[child_name])
+                                                                  
                     ## set the 'parent' attribute in children
                     for child in network.nodes[node_name].children:
-                        network.nodes[child].parent = network.nodes[node_name]
+                        network.nodes[child.name].parent = network.nodes[node_name]
 
         return network
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from numpy import array as array
+import matplotlib.pyplot as plt
 
 def chunks(l, n):
     """ Yield successive n-sized chunks from l.
@@ -30,7 +31,8 @@ def load_amat (uFilePath, uWidth = 0):
                     [label] = row
                     subsample = (label, array (subsample))
                     break
-                subsample.append (array (chunk) )
+                
+                subsample.append (array (row) )
     
             accumulator.append (subsample)
         
@@ -38,8 +40,10 @@ def load_amat (uFilePath, uWidth = 0):
 
 
 def test():
-    l = load_amat ('/home/loris/Downloads/rectangles_train.amat', 28)
-    print l
+    l = load_amat ('/home/loris/Downloads/rectangles_train.amat', 28)    
+    for i in range (len (l)):
+        plt.imshow (l[i][1])
+        plt.savefig('data/rect_' + str(i) + '.png')
 
 if __name__ == "__main__":
     test ()
