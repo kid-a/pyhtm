@@ -24,19 +24,18 @@ class Clock (object):
     def reset (self): self.__time = 0
 
 class Input (object):
-    """The Input class. Represents the Newtork input."""
+    """The Input class. Contains informations about the current input."""
     __shared_state = {}
     
     def __init__ (self, *args, **kwargs):
         self.__dict__ = self.__shared_state
-        self.__actual_input = None   ## :: numpy.array
         self.__temporal_gap = False  ## :: Bool
-
-    ## !FIXME use properties here?
-    def set_value (self, uValue): self.__actual_input = uValue
-    def set_temporal_gap (self, uValue): self.__temporal_gap = uValue
-    def get_value (self): return self.__actual_input
-    def temporal_gap_active (self): return self.__temporal_gap
+        
+    def __getitem__ (self, key):
+        if key == 'temporal_gap': return self.__temporal_gap
+        
+    def __setitem (self, key, value):
+        if key == 'temporal_gap': self.__temporal_gap = value
 
 
 def make_node (uType, uName, uSigma = 1):
@@ -62,6 +61,7 @@ class Node (object):
         self.starting_point = {}        ## the starting point of the RF
         self.delta = {}                 ## extension of the RF in xy coordinates
 
+    def __getitem__ (self, i): return self._behaviour[i]
     def clone_state (self): return self._behaviour.clone_state ()
     def set_state (self, uState): self._behaviour.set_state (uState)
 
@@ -90,6 +90,23 @@ class EntryNodeBehaviour (object):
         self._T = array ([[]])
         self._temporal_groups = set ([]) 
         self._PCG = array ([[]])
+
+        
+    def __getitem__ (self, key):
+        if key == 'lambda_minus': return self._lambda_minus
+        elif key == 'latest_active_coinc': return self._latest_active_coinc
+        elif key == 'C': return self._C
+        elif key == 'T': return self._T
+        elif key == 'PCG': return self._PCG
+        elif key == 'temporal_groups': return self._temporal_groups
+        
+    def __setitem (self, key, value):
+        if key == 'latest_active_coinc': self._latest_active_coinc = value
+        elif key == 'C': self._C = value
+        elif key == 'T': self._T = value
+        elif key == 'PCG': self._PCG = value
+        elif key == 'temporal_groups': self._temporal_groups = value
+        
 
     ##
     ## clone_state () -> { ( 'seen_k_star'

@@ -63,12 +63,11 @@ def train (uLayer):
             
             
 def train_entry_nodes (uNode):
-    s = uNode.clone_state ()
-    lambda_minus = s['lambda_minus']
-    seen_k_star = s['seen_k_star']
-    coincidences = s['C']
-    PCG = s['PCG']
-    temporal_groups = s['temporal_groups']
+    lambda_minus = uNode['lambda_minus']
+    seen_k_star = uNode['seen_k_star']
+    coincidences = uNode['C']
+    PCG = uNode['PCG']
+    temporal_groups = uNode['temporal_groups']
     
     ## find the coincidence closest to lambda_minus
     ## that is, the *active* coincidence
@@ -92,13 +91,13 @@ def train_entry_nodes (uNode):
     ## !FIXME keep track of temporal gap
     if Input ().temporal_gap_active ():
         pass
-        
-    s.set_state ({ 'seen_k_star' : seen_k_star,
-                   'latest_active_coinc' : k_star,
-                   'C' : coincidences,
-                   'PCG': PCG,
-                   'temporal_groups' : temporal_groups })
-                   
+    
+    uNode['seen_k_star'] = seen_k_star
+    uNode['latest_active_coinc'] = k_star
+    uNode['C'] = coincidences
+    uNode['PCG'] = PCG
+    uNode['temporal_groups'] = temporal_groups
+                           
 
 def train_intermediate_node (uNode):
     s = uNode.clone_state ()

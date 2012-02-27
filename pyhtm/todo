@@ -1,4 +1,7 @@
 
+scrivere procedure per aggiornare matrici in caso di aggiunta di nuove
+coincidenze e/o temporal group
+
 scrivere test data, facendo muovere pattern in varie direzioni
 
 e unit test per output node
